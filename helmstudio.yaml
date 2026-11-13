@@ -8,6 +8,8 @@ kinds: [image]
 hue: { dark: "#f0564a", light: "#c0392b" }
 license: MIT
 repo: https://github.com/janishar/MiniMax-H3-Image-Studio
+# As helmstudio's registry entry names it: a copy that differs reads as a changed approval.
+ref: main
 python: { version: "3.12" }
 # Measured on an M5 Pro: 41.9 GB of Metal memory at 4096x4096 (16 MP), in the decode. The models
 # take turns as int8: the PE (34 GB, 38 on an edit) and the text encoder (30) are each freed before the next loads,
