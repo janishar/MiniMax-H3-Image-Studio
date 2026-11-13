@@ -139,6 +139,7 @@ Write a prompt, press **Generate**. The left pane is every CLI flag:
   side that leads); with *Free*, both are yours.
 - **Seed** (⚄ for a random one). There are no steps to set: the checkpoint is
   distilled to six.
+- **Sampler** — *Euler*, as released, or *LCM*; see `--sampler` below.
 - **Warm re-roll** — keep the image model loaded between renders; see
   [Warm re-roll](#warm-re-roll).
 - Under **Generate**, the command it will run.
@@ -227,6 +228,7 @@ uv run minimax-h3-image "Keep everything in <Picture 1> as it is, but put the mu
 | `--mp` | `4` | Megapixels, 1–20. |
 | `--width`, `--height` | from `--ratio` and `--mp` | One: the other side follows the ratio. Both: exactly that size. Multiples of 32, 256–8192. |
 | `--seed` | `42` | Seed for the CPU generator, so a seed repeats across devices. For an edit it is mixed with the inputs' pixels, so editing a take with the seed it was made with does not start from the noise that made it. |
+| `--sampler` | `euler` | `euler`, the update MiniMax distilled the checkpoint with, or `lcm`, which predicts the clean image at each step and re-noises it to the next with fresh noise (as ComfyUI's `lcm` sampler). Users report LCM gives smoother skin, without Euler's oversharpened, speckled texture ([Comfy-Org discussion #5](https://huggingface.co/Comfy-Org/MiniMax-H3-Image/discussions/5)). Same speed; the same seed gives a different picture under each. |
 | `-m`, `--model` | `$MINIMAX_H3_IMAGE_PATH`, else `MiniMaxAI/MiniMax-H3-Image` | Local directory or Hub id. |
 | `--enhance` | off | Rewrite the prompt, and choose the ratio, with MiniMax-H3-Image-PE first. |
 | `--think` | off | With `--enhance`: reason at length (`xhigh`) rather than briefly (`low`). |

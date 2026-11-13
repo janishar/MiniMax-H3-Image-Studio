@@ -566,6 +566,9 @@ def clean_settings(req: dict[str, Any]) -> dict[str, Any]:
     if not 1 <= settings["mp"] <= 20:
         raise ValueError("megapixels must be between 1 and 20")
     settings["seed"] = as_int(req.get("seed", 42), "seed", 0, 2**63 - 1)
+    settings["sampler"] = req.get("sampler") or "euler"
+    if settings["sampler"] not in ("euler", "lcm"):
+        raise ValueError(f"unknown sampler {settings['sampler']}")
     for flag in ("enhance", "think", "warm"):
         settings[flag] = bool(req.get(flag))
     settings["think"] = settings["think"] and settings["enhance"]
@@ -639,6 +642,8 @@ class Runner:
                 "--seed", str(settings["seed"]), "--device", settings["device"], "--mp", f"{settings['mp']:g}"]  # fmt: skip
         if settings["ratio"]:
             argv += ["--ratio", settings["ratio"]]
+        if settings["sampler"] != "euler":
+            argv += ["--sampler", settings["sampler"]]
         for key in ("width", "height"):
             if key in settings:
                 argv += [f"--{key}", str(settings[key])]

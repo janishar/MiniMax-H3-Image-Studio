@@ -27,6 +27,8 @@ from PIL import Image, ImageOps
 from minimax_h3_image.int8 import load_int8, shards
 
 DEVICES = ("auto", "mps", "cuda", "cpu")
+#: euler: the update the checkpoint was distilled with. lcm: re-noise the predicted image at every step.
+SAMPLERS = ("euler", "lcm")
 #: The checkpoint is distilled to six steps, one output head each.
 STEPS = 6
 MAX_INPUTS = 16
@@ -220,6 +222,21 @@ def load_transformer(model_dir: Path, device: str):
     return load_int8(model, shards(sub), device, quantize=lambda name, _: "blocks." in name)
 
 
+def load_scheduler(model_dir: Path, sampler: str):
+    """The checkpoint's six-step scheduler: Euler as released, or LCM.
+
+    LCM predicts the clean image at each step and re-noises it to the next sigma with fresh noise, as
+    ComfyUI's lcm sampler does. Users report smoother skin than Euler's on this checkpoint; the same
+    seed then gives a different picture.
+    """
+    from diffusers import MiniMaxH3Scheduler
+
+    if sampler == "lcm":
+        return MiniMaxH3Scheduler.from_pretrained(model_dir / "scheduler", stochastic_sampling=True,
+                                                  euler_update_form="blend")  # fmt: skip
+    return MiniMaxH3Scheduler.from_pretrained(model_dir / "scheduler")
+
+
 def digests(images: list[Image.Image] | None) -> tuple[str, ...]:
     """Each reference's identity by its pixels, for the warm caches."""
     return tuple(f"{img.size}{hashlib.sha256(img.tobytes()).hexdigest()}" for img in images or ())
@@ -261,6 +278,8 @@ def main(argv: list[str] | None = None, warm: Warm | None = None) -> None:
     parser.add_argument("--width", type=int, help="Width (multiple of 32); alone, the height follows the ratio")
     parser.add_argument("--height", type=int, help="Height (multiple of 32); alone, the width follows the ratio")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--sampler", choices=SAMPLERS, default="euler",
+                        help="euler (default): as released; lcm: re-noises every step, smoother skin")  # fmt: skip
     parser.add_argument("-m", "--model", type=os.path.expanduser,
                         default=os.environ.get("MINIMAX_H3_IMAGE_PATH") or "MiniMaxAI/MiniMax-H3-Image",
                         help="Local path or HF repo ID (default: %(default)s, set via MINIMAX_H3_IMAGE_PATH)")  # fmt: skip
@@ -339,7 +358,6 @@ def main(argv: list[str] | None = None, warm: Warm | None = None) -> None:
         print(f"Aspect ratio clamped to {ratio:.3g}:1: this studio renders no wider than {MAX_RATIO:g}:1")
     width, height = plan_size(ratio, args.mp, args.width, args.height)
 
-    from diffusers import MiniMaxH3Scheduler
     from diffusers.modular_pipelines import MiniMaxH3ImageBlocks, MiniMaxH3ImageModularPipeline, SequentialPipelineBlocks
     from transformers import Qwen2TokenizerFast, Qwen3VLProcessor
 
@@ -378,13 +396,14 @@ def main(argv: list[str] | None = None, warm: Warm | None = None) -> None:
         print("The image model is still loaded")
     else:
         render = part("vae_encoder", "denoise", "decode")
-        render.update_components(
-            transformer=load_transformer(model_dir, device),
-            vae=load_vae(model_dir, device),
-            scheduler=MiniMaxH3Scheduler.from_pretrained(model_dir / "scheduler"),
-        )
+        render.update_components(transformer=load_transformer(model_dir, device), vae=load_vae(model_dir, device))
         if warm:
             warm.render, warm.render_key = render, (str(model_dir), device)
+    # Every render, so a warm one takes this render's sampler, with fresh step state.
+    render.update_components(scheduler=load_scheduler(model_dir, args.sampler))
+    # LCM's per-step noise comes from the global RNG: seeded, a seed repeats.
+    seed = noise_seed(args.seed, images)
+    torch.manual_seed(seed)
     steps = iter(range(1, STEPS + 1))
 
     def on_step(*_) -> None:
@@ -407,7 +426,7 @@ def main(argv: list[str] | None = None, warm: Warm | None = None) -> None:
     progress = render.transformer.register_forward_hook(on_step)
     try:
         out = render(state=state, height=height, width=width, output="images",
-                     generator=torch.Generator().manual_seed(noise_seed(args.seed, images)))[0]  # fmt: skip
+                     generator=torch.Generator().manual_seed(seed))[0]  # fmt: skip
     finally:  # a warm transformer outlives this render's hooks
         first.remove()
         progress.remove()

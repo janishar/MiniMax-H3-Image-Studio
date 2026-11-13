@@ -110,6 +110,15 @@ import("/helm/sdk/v1/helm-runtime.js").then((helm) => helm.themeBridge()).catch(
       </section>
 
       <section>
+        <label class="label" for="sampler">Sampler</label>
+        <select id="sampler" aria-describedby="samplerHint">
+          <option value="euler">Euler — as released</option>
+          <option value="lcm">LCM — smoother skin</option>
+        </select>
+        <p class="hint" id="samplerHint">LCM re-noises the image at every step: smoother skin and lips, at the same speed. The same seed gives a different picture under each.</p>
+      </section>
+
+      <section>
         <label class="toggle" for="warm">
           <input type="checkbox" id="warm">
           <b>Warm re-roll <span class="tag" id="warmTag">not loaded</span></b>

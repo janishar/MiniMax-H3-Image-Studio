@@ -8,7 +8,7 @@ const RATIOS = ["1:1", "4:3", "3:4", "3:2", "2:3", "16:9", "9:16", "21:9", "5:4"
 const STAGES = [
   ["enhance", "Enhance"], ["encode", "Encode"], ["load", "Load"], ["denoise", "Denoise"], ["decode", "Decode"], ["save", "Save"],
 ];
-const FIELDS = ["prompt", "mp", "seed", "enhance", "think", "warm", "device"]; // width and height are wired on their own
+const FIELDS = ["prompt", "mp", "seed", "sampler", "enhance", "think", "warm", "device"]; // width and height are wired on their own
 
 const ui = {
   session: "", paths: {}, inputs: [], takes: [], queue: [],
@@ -98,7 +98,7 @@ function settings() {
     prompt: $("prompt").value, ratio: free ? null : ui.ratio, free,
     // Only the typed side goes to the CLI, which works the other out by the same rule.
     width: free || ui.side === "width" ? num("width") : null, height: free || ui.side === "height" ? num("height") : null,
-    mp: num("mp") ?? 4, seed: num("seed") ?? 42,
+    mp: num("mp") ?? 4, seed: num("seed") ?? 42, sampler: $("sampler").value,
     enhance: $("enhance").checked, think: $("think").checked, warm: $("warm").checked, device: $("device").value,
   };
 }
@@ -110,6 +110,7 @@ function applySettings(s) {
   ui.side = s.free ? null : s.width ? "width" : s.height ? "height" : null;
   $("mp").value = [8, 12, 16].includes(s.mp) ? String(s.mp) : "4";
   $("seed").value = s.seed ?? 42;
+  $("sampler").value = s.sampler === "lcm" ? "lcm" : "euler";
   for (const flag of ["enhance", "think", "warm"]) $(flag).checked = !!s[flag];
   $("device").value = s.device || "auto";
   ui.ratio = s.free ? "free" : s.ratio || null;
@@ -218,6 +219,7 @@ function renderCommand() {
   if (s.height) parts.push(`--height ${s.height}`);
   if (s.mp !== 4) parts.push(`--mp ${s.mp}`);
   if (s.seed !== 42) parts.push(`--seed ${s.seed}`);
+  if (s.sampler !== "euler") parts.push(`--sampler ${s.sampler}`);
   if (s.enhance) parts.push("--enhance");
   if (s.enhance && s.think) parts.push("--think");
   if (s.device !== "auto") parts.push(`--device ${s.device}`);
