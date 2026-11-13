@@ -108,7 +108,7 @@ function applySettings(s) {
   $("width").value = s.width ?? "";
   $("height").value = s.height ?? "";
   ui.side = s.free ? null : s.width ? "width" : s.height ? "height" : null;
-  $("mp").value = s.mp === 16 ? "16" : "4";
+  $("mp").value = [8, 12, 16].includes(s.mp) ? String(s.mp) : "4";
   $("seed").value = s.seed ?? 42;
   for (const flag of ["enhance", "think", "warm"]) $(flag).checked = !!s[flag];
   $("device").value = s.device || "auto";

@@ -133,7 +133,7 @@ Write a prompt, press **Generate**. The left pane is every CLI flag:
   is written as `@name` and sent as `<Picture N>` by the image's place in the
   list, so removing another image never breaks it.
 - **Prompt enhancer** — **Enhance prompt** and **Let it think**.
-- **Aspect ratio** — *Auto*, a preset, or *Free*; **Size** — 4 MP or 16 MP; and
+- **Aspect ratio** — *Auto*, a preset, or *Free*; **Size** — 4, 8, 12 or 16 MP; and
   the size it will render. Type a **Width** or a **Height** and the other side
   follows the ratio (shown in italics, still editable — typing there makes it the
   side that leads); with *Free*, both are yours.
