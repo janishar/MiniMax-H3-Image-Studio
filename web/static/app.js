@@ -171,6 +171,9 @@ function update() {
   const ok = (!w || w % 32 === 0) && (!h || h % 32 === 0);
   $("grid32").textContent = missing ? "set both" : ok ? "ok" : "not a multiple";
   $("grid32").classList.toggle("warn", missing || !ok);
+  // Size sets the area only while no side is typed: a typed side, or Free, decides it instead.
+  $("mp").disabled = free || !!ui.side;
+  $("mp").title = $("mp").disabled ? "Not used: the width or height you typed sets the size" : "";
   renderRatios();
   renderRefs();
   renderCommand();
